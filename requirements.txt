@@ -1,0 +1,4 @@
+matplotlib
+networkx
+pickle
+python-telegram-bot
