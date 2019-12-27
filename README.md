@@ -1,6 +1,6 @@
-# Project Title
+# QuizBot
 
-One Paragraph of project description goes here
+This project consists on a custom compiler for a quiz generation language along with a Telegram bot for quering purposes.
 
 ## Getting Started
 
