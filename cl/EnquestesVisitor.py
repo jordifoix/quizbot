@@ -1,5 +1,8 @@
 # Generated from Enquestes.g by ANTLR 4.7.1
 from antlr4 import *
+import matplotlib.pyplot as plt
+import networkx as nx
+import pickle
 if __name__ is not None and "." in __name__:
     from .EnquestesParser import EnquestesParser
 else:
@@ -25,16 +28,16 @@ class EnquestesVisitor(ParseTreeVisitor):
         self.ids = {}
         try:
             self.questions = pickle.load(
-                open("./bot/database/questions.p", "rb"))
+                open("./data/questions.p", "rb"))
         except FileNotFoundError:
             self.questions = {}
             pickle.dump(self.questions, open(
-                "./bot/database/questions.p", "wb"))
+                "./data/questions.p", "wb"))
         try:
-            self.G = pickle.load(open("./bot/database/graph.p", "rb"))
+            self.G = pickle.load(open("./data/graph.p", "rb"))
         except FileNotFoundError:
             self.G = nx.DiGraph()
-            pickle.dump(self.G, open("./bot/database/graph.p", "wb"))
+            pickle.dump(self.G, open("./data/graph.p", "wb"))
 
         nodes = self.G.nodes
         edges = self.G.edges
@@ -55,7 +58,7 @@ class EnquestesVisitor(ParseTreeVisitor):
             if edgeType == "alternative":
                 alternativeId = edgeInformation["alternativeId"]
                 self.ids[alternativeId] = {"type": edgeType}
-            elif edgeType == "item"2:
+            elif edgeType == "item":
                 itemId = edgeInformation["label"]
                 questionId, answerId = edge
                 self.ids[itemId] = {"type": edgeType,
@@ -64,18 +67,19 @@ class EnquestesVisitor(ParseTreeVisitor):
 
     def finish(self):
         pos = nx.spring_layout(self.G)
-        E = self.g.edges()
+        E = self.G.edges()
         Ecolors = []
         Elabels = {}
-        for u, v in edges:
+        for u, v in E:
             type = self.G[u][v]["type"]
+            Elabels[(u, v)] = self.G[u][v]["label"]
             if type == "item":
                 Ecolors.append("#0000ff")
             elif type == "alternative":
                 Ecolors.append("#00ff00")
             elif type == "quiz" or type == "end":
                 Ecolors.append("#000000")
-            Elabels[(u, v)] = self.G[u][v]["label"]
+                Elabels[(u, v)] = ""
 
         nx.draw(self.G, pos, edge_color=Ecolors, with_labels=True)
         nx.draw_networkx_edge_labels(self.G, pos, edge_labels=Elabels)
@@ -126,7 +130,7 @@ class EnquestesVisitor(ParseTreeVisitor):
     # Visit a parse tree produced by EnquestesParser#item.
     def visitItem(self, ctx:EnquestesParser.ItemContext):
         itemId = self.visit(ctx.identifier())
-        questionId, answerId = self.visit(ctx.link())
+        questionId, answerId = self.visit(ctx.itemLink())
         if self.isQuestionId(questionId) and self.isAnswerId(answerId) and itemId not in self.ids:
             self.ids[itemId] = {
                 "type": "item",
@@ -152,11 +156,11 @@ class EnquestesVisitor(ParseTreeVisitor):
         if identifier not in self.ids:
             self.ids[identifier] = {"type": "alternative"}
 
-            sourceItemId = self.visit(l[3])
+            sourceItemId = self.visit(tokens[3])
 
             if self.isItemId(sourceItemId):
                 sourceQuestionId = self.ids[sourceItemId]["question"]
-                alternatives = self.visit(l[4])
+                alternatives = self.visit(tokens[4])
 
                 if isinstance(alternatives, list):
                     for alternative in alternatives:
@@ -183,7 +187,7 @@ class EnquestesVisitor(ParseTreeVisitor):
     # Visit a parse tree produced by EnquestesParser#enquesta.
     def visitEnquesta(self, ctx:EnquestesParser.EnquestaContext):
         children = ctx.getChildren()
-        tokens = [next(children) for i in range(ctx.getChildCount)]
+        tokens = [next(children) for i in range(ctx.getChildCount())]
         identifier = self.visit(tokens[0])
         if identifier not in self.ids:
             self.ids[identifier] = {"type": "quiz"}
@@ -230,9 +234,9 @@ class EnquestesVisitor(ParseTreeVisitor):
         children = ctx.getChildren()
         tokens = [next(children) for i in range(ctx.getChildCount())]
         alternatives = []
-        for i in range(len(children)):
+        for i in range(len(tokens)):
             if i % 2 == 1:
-                answerNum, itemId = self.visit(l[i])
+                answerNum, itemId = self.visit(tokens[i])
                 alternatives.append({
                     "answerNum": answerNum,
                     "itemId": itemId
@@ -245,7 +249,7 @@ class EnquestesVisitor(ParseTreeVisitor):
         children = ctx.getChildren()
         tokens = [next(children) for i in range(ctx.getChildCount())]
         answerNum = str(tokens[1])
-        identifier = self.visit(l[3])
+        identifier = self.visit(tokens[3])
         return (answerNum, identifier)
 
 
@@ -253,7 +257,7 @@ class EnquestesVisitor(ParseTreeVisitor):
     def visitItemLink(self, ctx:EnquestesParser.ItemLinkContext):
         children = ctx.getChildren()
         tokens = [next(children) for i in range(3)]
-        return self.visit(l[0]), self.visit(l[2])
+        return self.visit(tokens[0]), self.visit(tokens[2])
 
 
     # Visit a parse tree produced by EnquestesParser#text.
