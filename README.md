@@ -5,7 +5,7 @@ This project consists on a custom compiler for a quiz generation language along 
 
 ### Prerequisites
 
-You need these libraries, as specified in the requirements.txt file:
+The following libraries are needed, as specified in the requirements.txt file:
 
 ```
 antlr4-python3-runtime==4.7.2
@@ -13,7 +13,7 @@ networkx==2.4
 python-telegram-bot==12.2.0
 ```
 
-You can install them with pip or another package manager.
+They can be installed using pip or another package manager.
 ```
 $ pip install -r requirements.txt
 ```
